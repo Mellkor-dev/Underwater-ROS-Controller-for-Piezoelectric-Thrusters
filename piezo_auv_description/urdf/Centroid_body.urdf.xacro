@@ -3,6 +3,15 @@
      Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
      For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
 <robot name="Centroid_body" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!-- Dummy root link to prevent KDL inertia warning -->
+  <link name="base_footprint"/>
+
+  <joint name="base_footprint_joint" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
   <link
     name="base_link">
     <inertial>
@@ -92,7 +101,7 @@
     <material>Gazebo/Orange</material>
   </gazebo>
   <joint
-    name="left_jet_f"
+    name="left_jet_f_joint"
     type="fixed">
     <origin
       xyz="-0.0087 0.038482 0.0035"
@@ -145,7 +154,7 @@
     <material>Gazebo/Orange</material>
   </gazebo>
   <joint
-    name="left_jet_r"
+    name="left_jet_r_joint"
     type="fixed">
     <origin
       xyz="0.0087 0.038482 0.0035"
@@ -201,7 +210,7 @@
     <material>Gazebo/Orange</material>
   </gazebo>
   <joint
-    name="right_jet_f"
+    name="right_jet_f_joint"
     type="fixed">
     <origin
       xyz="-0.0087 -0.038482 0.0035"
@@ -256,7 +265,7 @@
     <material>Gazebo/Orange</material>
   </gazebo>
   <joint
-    name="right_jet_r"
+    name="right_jet_r_joint"
     type="fixed">
     <origin
       xyz="0.0087 -0.038482 0.0035"
@@ -311,7 +320,7 @@
     <material>Gazebo/Orange</material>
   </gazebo>
   <joint
-    name="hover_front"
+    name="hover_front_joint"
     type="fixed">
     <origin
       xyz="0.0382758256318996 0 -0.0052"
@@ -367,7 +376,7 @@
     <material>Gazebo/Orange</material>
   </gazebo>
   <joint
-    name="hover_rear"
+    name="hover_rear_joint"
     type="fixed">
     <origin
       xyz="-0.038276 0 -0.0052"
