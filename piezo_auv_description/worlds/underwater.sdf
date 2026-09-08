@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <sdf version="1.8">
-  <world name="empty_world">
+  <world name="underwater_world">
     <physics type="ode">
       <max_step_size>0.001</max_step_size>
       <real_time_factor>1.0</real_time_factor>
@@ -25,9 +25,15 @@
       name="gz::sim::systems::Contact">
     </plugin>
 
-    <!-- GUI Configuration for fine-scale grid (0.05 m / 5 cm per box) -->
+    <!-- Buoyancy System: Water density 1000 kg/m^3 -->
+    <plugin
+      filename="gz-sim-buoyancy-system"
+      name="gz::sim::systems::Buoyancy">
+      <uniform_fluid_density>1000</uniform_fluid_density>
+    </plugin>
+
+    <!-- GUI Configuration with 0.05 m grid and underwater camera -->
     <gui fullscreen="0">
-      <!-- 3D Scene View with initial close camera position -->
       <plugin filename="MinimalScene" name="3D View">
         <gz-gui>
           <title>3D View</title>
@@ -36,8 +42,8 @@
         </gz-gui>
         <engine>ogre2</engine>
         <scene>scene</scene>
-        <ambient_light>0.5 0.5 0.5</ambient_light>
-        <background_color>0.8 0.85 0.9</background_color>
+        <ambient_light>0.25 0.45 0.6</ambient_light>
+        <background_color>0.1 0.25 0.4</background_color>
         <camera_pose>-0.6 0.6 0.45 0 0.35 -0.785</camera_pose>
       </plugin>
 
@@ -112,38 +118,39 @@
           <vertical_cell_count>0</vertical_cell_count>
           <cell_length>0.05</cell_length>
           <pose>0 0 0.001 0 0 0</pose>
-          <color>0.35 0.35 0.4 0.7</color>
+          <color>0.2 0.45 0.55 0.7</color>
         </insert>
       </plugin>
     </gui>
 
-    <!-- Gravity: standard Earth gravity for free-fall test -->
+    <!-- Gravity -->
     <gravity>0 0 -9.81</gravity>
 
+    <!-- Underwater Scene Lighting and Fog (inspired by Plankton underwater worlds) -->
     <scene>
-      <ambient>0.6 0.6 0.6 1</ambient>
-      <background>0.8 0.8 0.8 1</background>
+      <ambient>0.2 0.35 0.5 1.0</ambient>
+      <background>0.08 0.2 0.35 1.0</background>
       <shadows>true</shadows>
       <grid>false</grid>
     </scene>
 
-    <!-- Sun light -->
+    <!-- Underwater Light (attenuated as in water) -->
     <light type="directional" name="sun">
       <cast_shadows>true</cast_shadows>
       <pose>0 0 10 0 0 0</pose>
-      <diffuse>0.8 0.8 0.8 1</diffuse>
-      <specular>0.2 0.2 0.2 1</specular>
+      <diffuse>0.5 0.7 0.85 1</diffuse>
+      <specular>0.3 0.4 0.5 1</specular>
       <attenuation>
-        <range>1000</range>
-        <constant>0.9</constant>
-        <linear>0.01</linear>
-        <quadratic>0.001</quadratic>
+        <range>20</range>
+        <constant>0.8</constant>
+        <linear>0.05</linear>
+        <quadratic>0.01</quadratic>
       </attenuation>
-      <direction>-0.5 0.1 -0.9</direction>
+      <direction>-0.3 0.1 -0.9</direction>
     </light>
 
-    <!-- Ground Plane -->
-    <model name="ground_plane">
+    <!-- Tank / Seabed Floor -->
+    <model name="tank_bottom">
       <static>true</static>
       <link name="link">
         <collision name="collision">
@@ -160,10 +167,6 @@
                 <mu2>50</mu2>
               </ode>
             </friction>
-            <bounce>
-              <restitution_coefficient>0.1</restitution_coefficient>
-              <threshold>0.01</threshold>
-            </bounce>
             <contact>
               <ode>
                 <kp>1000000.0</kp>
@@ -180,9 +183,30 @@
             </plane>
           </geometry>
           <material>
-            <ambient>0.85 0.85 0.85 1</ambient>
-            <diffuse>0.85 0.85 0.85 1</diffuse>
-            <specular>0.8 0.8 0.8 1</specular>
+            <ambient>0.2 0.3 0.35 1</ambient>
+            <diffuse>0.25 0.35 0.4 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Water Surface Visual (translucent plane at z = 1.0m) -->
+    <model name="water_surface">
+      <static>true</static>
+      <pose>0 0 1.0 0 0 0</pose>
+      <link name="surface_link">
+        <visual name="surface_visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>10 10</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.1 0.4 0.6 0.3</ambient>
+            <diffuse>0.2 0.5 0.7 0.3</diffuse>
+            <specular>0.6 0.8 1.0 0.5</specular>
           </material>
         </visual>
       </link>
@@ -190,3 +214,4 @@
 
   </world>
 </sdf>
+

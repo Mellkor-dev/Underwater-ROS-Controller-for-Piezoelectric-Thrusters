@@ -16,8 +16,13 @@ def generate_launch_description():
     robot_description_config = xacro.process_file(urdf_path)
     robot_description = {'robot_description': robot_description_config.toxml()}
 
-    # Path to empty world
-    world_file = os.path.join(pkg_piezo_auv_desc, 'worlds', 'empty.sdf')
+    # World configuration argument (defaults to underwater.sdf, can pass world:=empty.sdf)
+    world_arg = DeclareLaunchArgument(
+        'world',
+        default_value='underwater.sdf',
+        description='World file to load from worlds/ directory'
+    )
+    world_file = PathJoinSubstitution([pkg_piezo_auv_desc, 'worlds', LaunchConfiguration('world')])
 
     # Configure GZ_SIM_RESOURCE_PATH so Gazebo resolves "package://piezo_auv_description/..."
     install_share_parent = os.path.dirname(pkg_piezo_auv_desc)
@@ -37,19 +42,12 @@ def generate_launch_description():
         parameters=[robot_description, {'use_sim_time': True}]
     )
 
-    # Gazebo Sim launch
-    gz_args = LaunchConfiguration('gz_args')
-    declare_gz_args = DeclareLaunchArgument(
-        'gz_args',
-        default_value=f'-r {world_file}',
-        description='Arguments for Gazebo Sim'
-    )
-
+    # Gazebo Sim launch (defaults to running as soon as simulation starts)
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(pkg_ros_gz_sim, 'launch', 'gz_sim.launch.py')
         ),
-        launch_arguments={'gz_args': gz_args}.items(),
+        launch_arguments={'gz_args': [PathJoinSubstitution(['-r ', world_file])]}.items(),
     )
 
     # Spawn robot entity from /robot_description
@@ -62,7 +60,7 @@ def generate_launch_description():
             '-topic', '/robot_description',
             '-x', '0.0',
             '-y', '0.0',
-            '-z', '0.3'  # 30 cm drop above ground plane
+            '-z', '0.5'  # 50 cm drop above ground plane
         ]
     )
 
@@ -77,8 +75,8 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        world_arg,
         gz_resource_path,
-        declare_gz_args,
         rsp_node,
         gazebo,
         spawn_node,
