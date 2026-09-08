@@ -1,0 +1,382 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot name="Centroid_body" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="-4.8316E-11 3.2213E-18 0.0057577"
+        rpy="0 0 0" />
+      <mass
+        value="0.039075" />
+      <inertia
+        ixx="7.9515E-06"
+        ixy="-8.5637E-09"
+        ixz="1.944E-14"
+        iyy="7.7226E-06"
+        iyz="-3.498E-22"
+        izz="5.1331E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://piezo_auv_description/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.69804 0.69804 0.69804 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://piezo_auv_description/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <gazebo reference="base_link">
+    <material>Gazebo/Grey</material>
+  </gazebo>
+
+
+  <link
+    name="left_jet_f">
+    <inertial>
+      <origin
+        xyz="-4.3368E-19 0 -0.0038323"
+        rpy="0 0 0" />
+      <mass
+        value="0.0075196" />
+      <inertia
+        ixx="4.9788E-07"
+        ixy="-1.3062E-38"
+        ixz="-1.0636E-23"
+        iyy="4.9788E-07"
+        iyz="-5.5228E-39"
+        izz="9.6988E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://piezo_auv_description/meshes/left_jet_f.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.83922 0.46667 0.36863 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 -0.00335" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.0166" length="0.0067" />
+      </geometry>
+    </collision>
+
+
+
+  </link>
+  <gazebo reference="left_jet_f">
+    <material>Gazebo/Orange</material>
+  </gazebo>
+  <joint
+    name="left_jet_f"
+    type="fixed">
+    <origin
+      xyz="-0.0087 0.038482 0.0035"
+      rpy="3.1416 1.5708 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="left_jet_f" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="left_jet_r">
+    <inertial>
+      <origin
+        xyz="8.6736E-19 6.9389E-18 -0.0038323"
+        rpy="0 0 0" />
+      <mass
+        value="0.0075196" />
+      <inertia
+        ixx="4.9788E-07"
+        ixy="-1.4263E-39"
+        ixz="8.4073E-24"
+        iyy="4.9788E-07"
+        iyz="2.2962E-39"
+        izz="9.6988E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://piezo_auv_description/meshes/left_jet_r.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.69804 0.69804 0.69804 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 -0.00335" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.0166" length="0.0067" />
+      </geometry>
+    </collision>
+  </link>
+  <gazebo reference="left_jet_r">
+    <material>Gazebo/Orange</material>
+  </gazebo>
+  <joint
+    name="left_jet_r"
+    type="fixed">
+    <origin
+      xyz="0.0087 0.038482 0.0035"
+      rpy="0 1.5708 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="left_jet_r" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+
+
+
+  <link
+    name="right_jet_f">
+    <inertial>
+      <origin
+        xyz="0 2.7756E-17 -0.0038323"
+        rpy="0 0 0" />
+      <mass
+        value="0.0075196" />
+      <inertia
+        ixx="4.9788E-07"
+        ixy="3.1117E-38"
+        ixz="-3.3862E-24"
+        iyy="4.9788E-07"
+        iyz="-3.2167E-21"
+        izz="9.6988E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://piezo_auv_description/meshes/right_jet_f.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.69804 0.69804 0.69804 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 -0.00335" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.0166" length="0.0067" />
+      </geometry>
+    </collision>
+  </link>
+  <gazebo reference="right_jet_f">
+    <material>Gazebo/Orange</material>
+  </gazebo>
+  <joint
+    name="right_jet_f"
+    type="fixed">
+    <origin
+      xyz="-0.0087 -0.038482 0.0035"
+      rpy="3.1416 1.5708 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="right_jet_f" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+
+
+  <link
+    name="right_jet_r">
+    <inertial>
+      <origin
+        xyz="-3.4694E-17 0 -0.0038323"
+        rpy="0 0 0" />
+      <mass
+        value="0.0075196" />
+      <inertia
+        ixx="4.9788E-07"
+        ixy="3.5228E-38"
+        ixz="3.3827E-21"
+        iyy="4.9788E-07"
+        iyz="-2.9636E-25"
+        izz="9.6988E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://piezo_auv_description/meshes/right_jet_r.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.69804 0.69804 0.69804 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 -0.00335" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.0166" length="0.0067" />
+      </geometry>
+    </collision>
+  </link>
+  <gazebo reference="right_jet_r">
+    <material>Gazebo/Orange</material>
+  </gazebo>
+  <joint
+    name="right_jet_r"
+    type="fixed">
+    <origin
+      xyz="0.0087 -0.038482 0.0035"
+      rpy="-1.5708 0 -1.5708" />
+    <parent
+      link="base_link" />
+    <child
+      link="right_jet_r" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+
+
+  <link
+    name="hover_front">
+    <inertial>
+      <origin
+        xyz="-1.2907E-18 0 -0.0038323"
+        rpy="0 0 0" />
+      <mass
+        value="0.0075196" />
+      <inertia
+        ixx="4.9788E-07"
+        ixy="-1.2994E-38"
+        ixz="-1.5581E-25"
+        iyy="4.9788E-07"
+        iyz="6.5797E-24"
+        izz="9.6988E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://piezo_auv_description/meshes/hover_front.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.69804 0.69804 0.69804 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 -0.00335" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.0166" length="0.0067" />
+      </geometry>
+    </collision>
+  </link>
+  <gazebo reference="hover_front">
+    <material>Gazebo/Orange</material>
+  </gazebo>
+  <joint
+    name="hover_front"
+    type="fixed">
+    <origin
+      xyz="0.0382758256318996 0 -0.0052"
+      rpy="3.14159265358979 0 -1.5707963267949" />
+    <parent
+      link="base_link" />
+    <child
+      link="hover_front" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+
+
+
+  <link
+    name="hover_rear">
+    <inertial>
+      <origin
+        xyz="0 1.2125E-18 -0.0038323"
+        rpy="0 0 0" />
+      <mass
+        value="0.0075196" />
+      <inertia
+        ixx="4.9788E-07"
+        ixy="-5.5174E-38"
+        ixz="-5.9012E-24"
+        iyy="4.9788E-07"
+        iyz="1.2711E-23"
+        izz="9.6988E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://piezo_auv_description/meshes/hover_rear.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.69804 0.69804 0.69804 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 -0.00335" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.0166" length="0.0067" />
+      </geometry>
+    </collision>
+  </link>
+  <gazebo reference="hover_rear">
+    <material>Gazebo/Orange</material>
+  </gazebo>
+  <joint
+    name="hover_rear"
+    type="fixed">
+    <origin
+      xyz="-0.038276 0 -0.0052"
+      rpy="3.1416 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="hover_rear" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+</robot>

@@ -1,0 +1,23 @@
+digraph G {
+node [shape=box];
+"base_link" [label="base_link"];
+"hover_front" [label="hover_front"];
+"hover_rear" [label="hover_rear"];
+"left_jet_f" [label="left_jet_f"];
+"left_jet_r" [label="left_jet_r"];
+"right_jet_f" [label="right_jet_f"];
+"right_jet_r" [label="right_jet_r"];
+node [shape=ellipse, color=blue, fontcolor=blue];
+"base_link" -> "hover_front" [label="xyz: 0.0382758 0 -0.0052 \nrpy: 3.14159 -0 -1.5708"]
+"hover_front" -> "hover_front"
+"base_link" -> "hover_rear" [label="xyz: -0.038276 0 -0.0052 \nrpy: -3.14159 -0 0"]
+"hover_rear" -> "hover_rear"
+"base_link" -> "left_jet_f" [label="xyz: -0.0087 0.038482 0.0035 \nrpy: 0 1.5708 -3.1416"]
+"left_jet_f" -> "left_jet_f"
+"base_link" -> "left_jet_r" [label="xyz: 0.0087 0.038482 0.0035 \nrpy: 0 1.5708 -0"]
+"left_jet_r" -> "left_jet_r"
+"base_link" -> "right_jet_f" [label="xyz: -0.0087 -0.038482 0.0035 \nrpy: 0 1.5708 -3.1416"]
+"right_jet_f" -> "right_jet_f"
+"base_link" -> "right_jet_r" [label="xyz: 0.0087 -0.038482 0.0035 \nrpy: -1.5708 -0 -1.5708"]
+"right_jet_r" -> "right_jet_r"
+}
