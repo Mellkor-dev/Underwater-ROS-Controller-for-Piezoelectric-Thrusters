@@ -54,7 +54,7 @@ class PJAControllerOriented(Node):
         }
 
         # 15 mN peak per PJA
-        self.max_thrust = 0.015  # N
+        self.max_thrust = 0.05  # N
 
         self.get_logger().info('Precision PJA Controller Initialized with Auto-Clear.')
 
@@ -156,7 +156,7 @@ def main(args=None):
         pass
     finally:
         node.destroy_node()
-        rclpy.shutdown()
-
+        if rclpy.ok():
+            rclpy.shutdown()
 if __name__ == '__main__':
     main()

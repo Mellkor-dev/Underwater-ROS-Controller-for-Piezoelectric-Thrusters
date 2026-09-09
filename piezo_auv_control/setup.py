@@ -25,6 +25,7 @@ setup(
     entry_points={
         'console_scripts': [
             'pja_controller = piezo_auv_control.pja_controller:main',
+            'depth_hold_pid = piezo_auv_control.depth_hold_pid:main',
         ],
     },
 )
