@@ -74,11 +74,21 @@ def generate_launch_description():
         output='screen'
     )
 
+    imu_bridge_node = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        arguments=[
+            '/model/Centroid_body/imu@sensor_msgs/msg/Imu[gz.msgs.IMU',
+        ],
+        output='screen'
+    )
+
     return LaunchDescription([
         world_arg,
         gz_resource_path,
         rsp_node,
         gazebo,
         spawn_node,
-        bridge_node
+        bridge_node,
+        imu_bridge_node
     ])
