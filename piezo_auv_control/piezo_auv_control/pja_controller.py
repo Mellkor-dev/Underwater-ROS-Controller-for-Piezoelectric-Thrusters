@@ -38,7 +38,7 @@ class PJAControllerOriented(Node):
         
         # Command Watchdog
         self.last_cmd_time = self.get_clock().now()
-        self.cmd_timeout = 0.2  # seconds
+        self.cmd_timeout = 0.5  # seconds
 
         # Quaternion state [qw, qx, qy, qz]
         self.q = [1.0, 0.0, 0.0, 0.0]
@@ -53,10 +53,10 @@ class PJAControllerOriented(Node):
             'right_jet_r':  {'x':  0.00870, 'y': -0.03848, 'z':  0.00350, 'dir': [-1, 0, 0]},
         }
 
-        # 15 mN peak per PJA
+        # 50 mN peak per PJA
         self.max_thrust = 0.05  # N
 
-        self.get_logger().info('Precision PJA Controller Initialized with Auto-Clear.')
+        self.get_logger().info('Precision PJA Controller Initialized with Fixed Unidirectional Allocation.')
 
     def imu_callback(self, msg: Imu):
         self.q = [msg.orientation.w, msg.orientation.x, msg.orientation.y, msg.orientation.z]
@@ -75,7 +75,7 @@ class PJAControllerOriented(Node):
         ])
 
     def control_loop(self):
-        # Watchdog: Reset commands if idle
+        # Watchdog
         dt_cmd = (self.get_clock().now() - self.last_cmd_time).nanoseconds * 1e-9
         if dt_cmd > self.cmd_timeout:
             self.cmd_linear = [0.0, 0.0, 0.0]
@@ -84,20 +84,20 @@ class PJAControllerOriented(Node):
         u_surge, u_heave = self.cmd_linear[0], self.cmd_linear[2]
         u_pitch, u_yaw = self.cmd_angular[1], self.cmd_angular[2]
 
+        # Explicit half-wave rectification (max(0.0, ...)) for unidirectional PJAs
+        # positive u_heave = UPWARD thrust command
         demands = {
-            'hover_front': u_heave + u_pitch,
-            'hover_rear':  u_heave - u_pitch,
+            'hover_front': max(0.0, u_heave + u_pitch),
+            'hover_rear':  max(0.0, u_heave - u_pitch),
             'left_jet_f':  max(0.0, u_surge) + max(0.0, -u_yaw),
             'right_jet_f': max(0.0, u_surge) + max(0.0, u_yaw),
             'left_jet_r':  max(0.0, -u_surge) + max(0.0, u_yaw),
             'right_jet_r': max(0.0, -u_surge) + max(0.0, -u_yaw),
         }
 
-        # Check if any demand is active
-        any_active = any(abs(demand) >= 1e-4 for demand in demands.values())
+        any_active = any(demand >= 1e-4 for demand in demands.values())
 
         if not any_active:
-            # Active Clear Command to release Gazebo latch
             clear_msg = Entity()
             clear_msg.name = 'Centroid_body::base_footprint'
             clear_msg.id = self.target_entity_id
@@ -105,15 +105,15 @@ class PJAControllerOriented(Node):
             self.clear_pub.publish(clear_msg)
             return
 
-        # Calculate Active Wrench
         body_fx, body_fy, body_fz = 0.0, 0.0, 0.0
         body_tx, body_ty, body_tz = 0.0, 0.0, 0.0
 
         for name, demand in demands.items():
-            if abs(demand) < 1e-4:
+            if demand < 1e-4:
                 continue
 
-            intensity = max(0.0, min(1.0, abs(demand)))
+            # Pure positive scaling (NO abs())
+            intensity = min(1.0, demand)
             thrust_mag = intensity * self.max_thrust
 
             pja = self.pja_offsets[name]
@@ -127,7 +127,6 @@ class PJAControllerOriented(Node):
             body_ty += rz * fx - rx * fz
             body_tz += rx * fy - ry * fx
 
-        # Rotate body wrench into world frame
         R = self.quat_to_rot_matrix(self.q)
         world_force = R @ np.array([body_fx, body_fy, body_fz])
         world_torque = R @ np.array([body_tx, body_ty, body_tz])
@@ -158,5 +157,6 @@ def main(args=None):
         node.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
+
 if __name__ == '__main__':
     main()
