@@ -60,7 +60,7 @@ def generate_launch_description():
             '-topic', '/robot_description',
             '-x', '0.0',
             '-y', '0.0',
-            '-z', '0.5'  # 50 cm drop above ground plane
+            '-z', '0.5'  # 0.5 m drop above ground plane
         ]
     )
 
@@ -69,16 +69,17 @@ def generate_launch_description():
         package='ros_gz_bridge',
         executable='parameter_bridge',
         arguments=[
+            # Clock & IMU
             '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
+            '/imu@sensor_msgs/msg/Imu[gz.msgs.IMU',
+            
+            # Bridge standard Wrench (ROS 2 -> Gazebo EntityWrench)
+            
+            '/world/underwater_world/wrench/persistent@ros_gz_interfaces/msg/EntityWrench]gz.msgs.EntityWrench',
+            '/world/underwater_world/wrench/clear@ros_gz_interfaces/msg/Entity]gz.msgs.Entity',
         ],
-        output='screen'
-    )
-
-    imu_bridge_node = Node(
-        package='ros_gz_bridge',
-        executable='parameter_bridge',
-        arguments=[
-            '/model/Centroid_body/imu@sensor_msgs/msg/Imu[gz.msgs.IMU',
+        remappings=[
+            ('/model/Centroid_body/imu', '/imu/data'),
         ],
         output='screen'
     )
@@ -90,5 +91,5 @@ def generate_launch_description():
         gazebo,
         spawn_node,
         bridge_node,
-        imu_bridge_node
+        
     ])

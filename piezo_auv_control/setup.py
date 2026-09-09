@@ -24,6 +24,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            'pja_controller = piezo_auv_control.pja_controller:main',
         ],
     },
 )

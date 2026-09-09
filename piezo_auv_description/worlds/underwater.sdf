@@ -35,6 +35,10 @@
       filename="gz-sim-imu-system"
       name="gz::sim::systems::Imu">
     </plugin>  
+    <plugin
+      filename="gz-sim-apply-link-wrench-system"
+      name="gz::sim::systems::ApplyLinkWrench">
+    </plugin>
       
     
 
