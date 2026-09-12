@@ -26,6 +26,7 @@ setup(
         'console_scripts': [
             'pja_controller = piezo_auv_control.pja_controller:main',
             'depth_hold_pid = piezo_auv_control.depth_hold_pid:main',
+            'piezo_sim_node = piezo_auv_control.piezo_sim_node:main'
         ],
     },
 )
