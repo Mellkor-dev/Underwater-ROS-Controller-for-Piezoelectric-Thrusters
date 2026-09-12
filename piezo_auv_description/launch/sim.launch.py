@@ -96,6 +96,13 @@ def generate_launch_description():
         output='screen'
     )
 
+    rviz_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        output='screen'
+    )
+
     return LaunchDescription([
         world_arg,
         gz_resource_path,
@@ -104,5 +111,6 @@ def generate_launch_description():
         spawn_node,
         bridge_node,
         pja_controller_node,
-        depth_hold_node
+        depth_hold_node,
+        rviz_node
     ])
