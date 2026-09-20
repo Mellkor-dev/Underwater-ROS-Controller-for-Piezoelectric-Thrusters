@@ -101,7 +101,9 @@ class PiezoSimulationROSNode(Node):
         self.pub_signals = self.create_publisher(Float64MultiArray, '/piezo_signals', qos_profile)
         self.pub_markers = self.create_publisher(MarkerArray, '/piezo_pulse_markers', 10)
         self.pub_path = self.create_publisher(Path, '/executed_path', 10)
-        self.pub_joint_states = self.create_publisher(JointState, '/joint_states', 10)
+        # Parameter to control whether this standalone node should broadcast TF
+        self.declare_parameter('publish_tf', False)
+        self.publish_tf = bool(self.get_parameter('publish_tf').value)
         
         self.tf_broadcaster = TransformBroadcaster(self)
         self.static_tf_broadcaster = StaticTransformBroadcaster(self)
@@ -110,7 +112,8 @@ class PiezoSimulationROSNode(Node):
         self.path_msg = Path()
         self.path_msg.header.frame_id = "odom"
 
-        self.publish_static_transforms()
+        if self.publish_tf:
+            self.publish_static_transforms()
         self.timer = self.create_timer(self.dt, self.timer_callback)
 
     def publish_static_transforms(self):
@@ -158,22 +161,23 @@ class PiezoSimulationROSNode(Node):
         js.position = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.pub_joint_states.publish(js)
 
-        # Dynamic TF: odom -> base_footprint
-        cy = np.cos(self.pose_2d[2] * 0.5)
-        sy = np.sin(self.pose_2d[2] * 0.5)
+        if self.publish_tf:
+            # Dynamic TF: odom -> base_footprint (standalone mode only)
+            cy = np.cos(self.pose_2d[2] * 0.5)
+            sy = np.sin(self.pose_2d[2] * 0.5)
 
-        t_tf = TransformStamped()
-        t_tf.header.stamp = now
-        t_tf.header.frame_id = 'odom'
-        t_tf.child_frame_id = 'base_footprint'
-        t_tf.transform.translation.x = float(self.pose_2d[0])
-        t_tf.transform.translation.y = float(self.pose_2d[1])
-        t_tf.transform.translation.z = 0.0
-        t_tf.transform.rotation.x = 0.0
-        t_tf.transform.rotation.y = 0.0
-        t_tf.transform.rotation.z = float(sy)
-        t_tf.transform.rotation.w = float(cy)
-        self.tf_broadcaster.sendTransform(t_tf)
+            t_tf = TransformStamped()
+            t_tf.header.stamp = now
+            t_tf.header.frame_id = 'odom'
+            t_tf.child_frame_id = 'base_footprint'
+            t_tf.transform.translation.x = float(self.pose_2d[0])
+            t_tf.transform.translation.y = float(self.pose_2d[1])
+            t_tf.transform.translation.z = 0.0
+            t_tf.transform.rotation.x = 0.0
+            t_tf.transform.rotation.y = 0.0
+            t_tf.transform.rotation.z = float(sy)
+            t_tf.transform.rotation.w = float(cy)
+            self.tf_broadcaster.sendTransform(t_tf)
 
         # Publish 6-Channel Waveforms
         v_inst = [self.generate_waveform(t, v_val) for v_val in V_cmd]

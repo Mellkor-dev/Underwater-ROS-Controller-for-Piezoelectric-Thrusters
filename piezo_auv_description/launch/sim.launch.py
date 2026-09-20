@@ -86,21 +86,27 @@ def generate_launch_description():
     pja_controller_node = Node(
         package='piezo_auv_control',
         executable='pja_controller',
-        output='screen'
+        output='screen',
+        parameters=[{'use_sim_time': True}]
     )
 
     # Depth Hold PID Node
     depth_hold_node = Node(
         package='piezo_auv_control',
         executable='depth_hold_pid',
-        output='screen'
+        output='screen',
+        parameters=[{'use_sim_time': True}]
     )
 
+    # RViz2 Node with dedicated AUV configuration
+    rviz_config_file = os.path.join(pkg_piezo_auv_desc, 'config', 'auv.rviz')
     rviz_node = Node(
         package='rviz2',
         executable='rviz2',
         name='rviz2',
-        output='screen'
+        output='screen',
+        parameters=[{'use_sim_time': True}],
+        arguments=['-d', rviz_config_file]
     )
 
     return LaunchDescription([

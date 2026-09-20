@@ -5,7 +5,7 @@ from geometry_msgs.msg import Twist, TransformStamped
 from sensor_msgs.msg import Imu
 from nav_msgs.msg import Odometry
 from ros_gz_interfaces.msg import Entity, EntityWrench
-from tf2_ros import TransformBroadcaster
+from tf2_ros import TransformBroadcaster, StaticTransformBroadcaster
 import numpy as np
 
 class PJAControllerOriented(Node):
@@ -29,8 +29,10 @@ class PJAControllerOriented(Node):
             Odometry, '/odom', self.odom_callback, 10
         )
 
-        # TF Broadcaster for RViz Odometry Visualization
+        # TF Broadcasters for RViz Odometry Visualization
         self.tf_broadcaster = TransformBroadcaster(self)
+        self.static_tf_broadcaster = StaticTransformBroadcaster(self)
+        self.publish_map_to_odom_static()
 
         self.update_rate = 50.0  # Hz
         self.timer = self.create_timer(1.0 / self.update_rate, self.control_loop)
@@ -56,13 +58,21 @@ class PJAControllerOriented(Node):
 
         self.get_logger().info('PJA Allocation Controller updated with TF Broadcaster & True ICR.')
 
+    def publish_map_to_odom_static(self):
+        static_tf = TransformStamped()
+        static_tf.header.stamp = self.get_clock().now().to_msg()
+        static_tf.header.frame_id = 'map'
+        static_tf.child_frame_id = 'odom'
+        static_tf.transform.rotation.w = 1.0
+        self.static_tf_broadcaster.sendTransform(static_tf)
+
     def imu_callback(self, msg: Imu):
         self.q = [msg.orientation.w, msg.orientation.x, msg.orientation.y, msg.orientation.z]
 
     def odom_callback(self, msg: Odometry):
-        # Broadcast TF frame from odom -> base_footprint for RViz visualization
+        # Broadcast TF frame from odom -> base_footprint synchronized to simulation clock
         t = TransformStamped()
-        t.header.stamp = self.get_clock().now().to_msg()
+        t.header.stamp = msg.header.stamp
         t.header.frame_id = 'odom'
         t.child_frame_id = 'base_footprint'
 
