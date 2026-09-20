@@ -1,9 +1,9 @@
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, SetEnvironmentVariable
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, SetEnvironmentVariable, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 import xacro
 
@@ -12,20 +12,16 @@ def generate_launch_description():
     pkg_ros_gz_sim = get_package_share_directory('ros_gz_sim')
     pkg_piezo_auv_control = get_package_share_directory('piezo_auv_control')
 
-    # Path to URDF xacro
     urdf_path = os.path.join(pkg_piezo_auv_desc, 'urdf', 'Centroid_body.urdf.xacro')
     robot_description_config = xacro.process_file(urdf_path)
     robot_description = {'robot_description': robot_description_config.toxml()}
 
-    # World configuration argument
     world_arg = DeclareLaunchArgument(
         'world',
         default_value='underwater.sdf',
         description='World file to load from worlds/ directory'
     )
-    world_file = PathJoinSubstitution([pkg_piezo_auv_desc, 'worlds', LaunchConfiguration('world')])
 
-    # Configure GZ_SIM_RESOURCE_PATH so Gazebo resolves URIs
     install_share_parent = os.path.dirname(pkg_piezo_auv_desc)
     current_resource_path = os.environ.get('GZ_SIM_RESOURCE_PATH', '')
     new_resource_path = f"{install_share_parent}:{pkg_piezo_auv_desc}:{current_resource_path}"
@@ -35,7 +31,6 @@ def generate_launch_description():
         value=new_resource_path
     )
 
-    # Robot State Publisher
     rsp_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
@@ -43,15 +38,19 @@ def generate_launch_description():
         parameters=[robot_description, {'use_sim_time': True}]
     )
 
-    # Gazebo Sim launch (-r flag starts simulation immediately upon load)
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(pkg_ros_gz_sim, 'launch', 'gz_sim.launch.py')
         ),
-        launch_arguments={'gz_args': [PathJoinSubstitution(['-r', world_file])]}.items(),
+        launch_arguments={
+            'gz_args': [
+                '-r -v 4 ',
+                pkg_piezo_auv_desc, '/worlds/', LaunchConfiguration('world')
+            ]
+        }.items(),
     )
 
-    # Spawn robot entity from /robot_description
+    # Spawn robot entity at water level (z = 0.5)
     spawn_node = Node(
         package='ros_gz_sim',
         executable='create',
@@ -65,7 +64,7 @@ def generate_launch_description():
         ]
     )
 
-    # Parameter Bridge Node
+    # Directional clock bridge (GZ -> ROS ONLY using '[') prevents WorldControl GUI flickering
     bridge_node = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
@@ -82,23 +81,31 @@ def generate_launch_description():
         output='screen'
     )
 
-    # PJA Allocation Controller Node
-    pja_controller_node = Node(
-        package='piezo_auv_control',
-        executable='pja_controller',
-        output='screen',
-        parameters=[{'use_sim_time': True}]
+    # Delayed instantiation prevents duplicate action execution error
+    delayed_pja_controller = TimerAction(
+        period=3.0,
+        actions=[
+            Node(
+                package='piezo_auv_control',
+                executable='pja_controller',
+                output='screen',
+                parameters=[{'use_sim_time': True}]
+            )
+        ]
     )
 
-    # Depth Hold PID Node
-    depth_hold_node = Node(
-        package='piezo_auv_control',
-        executable='depth_hold_pid',
-        output='screen',
-        parameters=[{'use_sim_time': True}]
+    delayed_depth_hold = TimerAction(
+        period=3.5,
+        actions=[
+            Node(
+                package='piezo_auv_control',
+                executable='depth_hold_pid',
+                output='screen',
+                parameters=[{'use_sim_time': True}]
+            )
+        ]
     )
 
-    # RViz2 Node with dedicated AUV configuration
     rviz_config_file = os.path.join(pkg_piezo_auv_desc, 'config', 'auv.rviz')
     rviz_node = Node(
         package='rviz2',
@@ -116,7 +123,7 @@ def generate_launch_description():
         gazebo,
         spawn_node,
         bridge_node,
-        pja_controller_node,
-        depth_hold_node,
+        delayed_pja_controller,
+        delayed_depth_hold,
         rviz_node
     ])

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import rclpy
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, SetEnvironmentVariable, TimerAction
 from rclpy.node import Node
 from geometry_msgs.msg import Twist, TransformStamped
 from sensor_msgs.msg import Imu
@@ -12,6 +13,7 @@ class PJAControllerOriented(Node):
     def __init__(self):
         super().__init__('pja_controller_oriented')
 
+        # Reverted back to persistent wrench publisher
         self.wrench_pub = self.create_publisher(
             EntityWrench, '/world/underwater_world/wrench/persistent', 10
         )
@@ -29,7 +31,6 @@ class PJAControllerOriented(Node):
             Odometry, '/odom', self.odom_callback, 10
         )
 
-        # TF Broadcasters for RViz Odometry Visualization
         self.tf_broadcaster = TransformBroadcaster(self)
         self.static_tf_broadcaster = StaticTransformBroadcaster(self)
         self.publish_map_to_odom_static()
@@ -43,7 +44,8 @@ class PJAControllerOriented(Node):
         self.cmd_timeout = 0.5
 
         self.q = [1.0, 0.0, 0.0, 0.0]
-        self.target_entity_id = 13 
+        self.model_ready = False
+        self.wrench_currently_active = False
 
         self.pja_offsets = {
             'hover_front':  {'x':  0.03828, 'y':  0.00000, 'z': -0.00520, 'dir': [0, 0, 1]},
@@ -55,8 +57,7 @@ class PJAControllerOriented(Node):
         }
 
         self.max_thrust = 0.05  # N (Peak PJA force)
-
-        self.get_logger().info('PJA Allocation Controller updated with TF Broadcaster & True ICR.')
+        self.get_logger().info('PJA Allocation Controller Active (Persistent Wrench Mode).')
 
     def publish_map_to_odom_static(self):
         static_tf = TransformStamped()
@@ -70,7 +71,10 @@ class PJAControllerOriented(Node):
         self.q = [msg.orientation.w, msg.orientation.x, msg.orientation.y, msg.orientation.z]
 
     def odom_callback(self, msg: Odometry):
-        # Broadcast TF frame from odom -> base_footprint synchronized to simulation clock
+        if not self.model_ready:
+            self.model_ready = True
+            self.get_logger().info('Model verified in Gazebo via /odom. Persistent wrench pipeline ready.')
+
         t = TransformStamped()
         t.header.stamp = msg.header.stamp
         t.header.frame_id = 'odom'
@@ -97,6 +101,9 @@ class PJAControllerOriented(Node):
         ])
 
     def control_loop(self):
+        if not self.model_ready:
+            return
+
         dt_cmd = (self.get_clock().now() - self.last_cmd_time).nanoseconds * 1e-9
         if dt_cmd > self.cmd_timeout:
             self.cmd_linear = [0.0, 0.0, 0.0]
@@ -105,30 +112,27 @@ class PJAControllerOriented(Node):
         u_surge, u_heave = self.cmd_linear[0], self.cmd_linear[2]
         u_pitch, u_yaw = self.cmd_angular[1], self.cmd_angular[2]
 
-        # ICR Differential Arc Turn Mapping
-        # Reduces yaw sensitivity (0.2 factor) so w+d maintains forward momentum while turning
         yaw_gain = 0.2 * u_yaw
 
         demands = {
             'hover_front': max(0.0, u_heave + u_pitch),
             'hover_rear':  max(0.0, u_heave - u_pitch),
-            
-            # Differential forward thrust for smooth arc turns
             'left_jet_f':  max(0.0, u_surge + yaw_gain),
             'right_jet_f': max(0.0, u_surge - yaw_gain),
-            
             'left_jet_r':  max(0.0, -u_surge - yaw_gain),
             'right_jet_r': max(0.0, -u_surge + yaw_gain),
         }
 
         any_active = any(demand >= 1e-4 for demand in demands.values())
 
+        # If zero demand, clear persistent wrenches to prevent runaway acceleration
         if not any_active:
-            clear_msg = Entity()
-            clear_msg.name = 'Centroid_body::base_footprint'
-            clear_msg.id = self.target_entity_id
-            clear_msg.type = 3
-            self.clear_pub.publish(clear_msg)
+            if self.wrench_currently_active:
+                clear_msg = Entity()
+                clear_msg.name = 'Centroid_body'
+                clear_msg.type = 2  # MODEL entity type
+                self.clear_pub.publish(clear_msg)
+                self.wrench_currently_active = False
             return
 
         body_fx, body_fy, body_fz = 0.0, 0.0, 0.0
@@ -152,15 +156,13 @@ class PJAControllerOriented(Node):
             body_ty += rz * fx - rx * fz
             body_tz += rx * fy - ry * fx
 
-        # Convert body-frame forces to world-frame forces using active IMU orientation
         R = self.quat_to_rot_matrix(self.q)
         world_force = R @ np.array([body_fx, body_fy, body_fz])
         world_torque = R @ np.array([body_tx, body_ty, body_tz])
 
         wrench_msg = EntityWrench()
-        wrench_msg.entity.name = 'Centroid_body::base_footprint'
-        wrench_msg.entity.id = self.target_entity_id
-        wrench_msg.entity.type = 3
+        wrench_msg.entity.name = 'Centroid_body'
+        wrench_msg.entity.type = 2  # MODEL type guarantees lookup resolution in Gazebo
 
         wrench_msg.wrench.force.x = float(world_force[0])
         wrench_msg.wrench.force.y = float(world_force[1])
@@ -171,6 +173,7 @@ class PJAControllerOriented(Node):
         wrench_msg.wrench.torque.z = float(world_torque[2])
 
         self.wrench_pub.publish(wrench_msg)
+        self.wrench_currently_active = True
 
 def main(args=None):
     rclpy.init(args=args)
