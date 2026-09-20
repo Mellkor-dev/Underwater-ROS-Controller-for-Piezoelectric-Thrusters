@@ -112,26 +112,35 @@ class PJAControllerOriented(Node):
         u_surge, u_heave = self.cmd_linear[0], self.cmd_linear[2]
         u_pitch, u_yaw = self.cmd_angular[1], self.cmd_angular[2]
 
-        yaw_gain = 0.2 * u_yaw
+        # Inverted yaw sign mapping for positive counter-clockwise rotation
+        yaw_gain = 0.3 * u_yaw
+        
+        # Pitch compensation for z-offset (0.0035m) of horizontal jets
+        surge_pitch_comp = 0.15 * abs(u_surge)
 
         demands = {
-            'hover_front': max(0.0, u_heave + u_pitch),
-            'hover_rear':  max(0.0, u_heave - u_pitch),
-            'left_jet_f':  max(0.0, u_surge + yaw_gain),
-            'right_jet_f': max(0.0, u_surge - yaw_gain),
-            'left_jet_r':  max(0.0, -u_surge - yaw_gain),
-            'right_jet_r': max(0.0, -u_surge + yaw_gain),
+            'hover_front': max(0.0, u_heave + u_pitch + surge_pitch_comp),
+            'hover_rear':  max(0.0, u_heave - u_pitch - surge_pitch_comp),
+            'left_jet_f':  max(0.0, u_surge - yaw_gain),   # -yaw_gain fires right_jet_f on positive yaw
+            'right_jet_f': max(0.0, u_surge + yaw_gain),   # +yaw_gain produces +tau_z
+            'left_jet_r':  max(0.0, -u_surge + yaw_gain),  # +yaw_gain produces +tau_z
+            'right_jet_r': max(0.0, -u_surge - yaw_gain),  # -yaw_gain
         }
 
         any_active = any(demand >= 1e-4 for demand in demands.values())
 
-        # If zero demand, clear persistent wrenches to prevent runaway acceleration
         if not any_active:
             if self.wrench_currently_active:
                 clear_msg = Entity()
                 clear_msg.name = 'Centroid_body'
                 clear_msg.type = 2  # MODEL entity type
                 self.clear_pub.publish(clear_msg)
+
+                zero_wrench = EntityWrench()
+                zero_wrench.entity.name = 'Centroid_body'
+                zero_wrench.entity.type = 2
+                self.wrench_pub.publish(zero_wrench)
+
                 self.wrench_currently_active = False
             return
 
@@ -152,29 +161,35 @@ class PJAControllerOriented(Node):
             body_fx += fx
             body_fy += fy
             body_fz += fz
+
+            # Accumulate 3D torque cross product (r x F) for all active thrusters
             body_tx += ry * fz - rz * fy
             body_ty += rz * fx - rx * fz
             body_tz += rx * fy - ry * fx
 
-        R = self.quat_to_rot_matrix(self.q)
-        world_force = R @ np.array([body_fx, body_fy, body_fz])
-        world_torque = R @ np.array([body_tx, body_ty, body_tz])
+        # Deadband small command noise after full summation loop
+        if abs(u_yaw) < 1e-3:
+            body_tz = 0.0
+        if abs(u_pitch) < 1e-3:
+            body_ty = 0.0
+            body_tx = 0.0
 
+        # Step 3: Publish raw body-frame wrench
         wrench_msg = EntityWrench()
         wrench_msg.entity.name = 'Centroid_body'
-        wrench_msg.entity.type = 2  # MODEL type guarantees lookup resolution in Gazebo
+        wrench_msg.entity.type = 2  # MODEL entity
 
-        wrench_msg.wrench.force.x = float(world_force[0])
-        wrench_msg.wrench.force.y = float(world_force[1])
-        wrench_msg.wrench.force.z = float(world_force[2])
+        wrench_msg.wrench.force.x = float(body_fx)
+        wrench_msg.wrench.force.y = float(body_fy)
+        wrench_msg.wrench.force.z = float(body_fz)
 
-        wrench_msg.wrench.torque.x = float(world_torque[0])
-        wrench_msg.wrench.torque.y = float(world_torque[1])
-        wrench_msg.wrench.torque.z = float(world_torque[2])
+        wrench_msg.wrench.torque.x = float(body_tx)
+        wrench_msg.wrench.torque.y = float(body_ty)
+        wrench_msg.wrench.torque.z = float(body_tz)
 
         self.wrench_pub.publish(wrench_msg)
         self.wrench_currently_active = True
-
+        
 def main(args=None):
     rclpy.init(args=args)
     node = PJAControllerOriented()

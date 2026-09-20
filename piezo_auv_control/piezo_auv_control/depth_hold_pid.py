@@ -70,11 +70,12 @@ class HoldCurrentZPID(Node):
         # Watchdog: If no teleop input for 0.3s, transition to position-hold
         if dt_teleop > 0.3 and self.teleop_active:
             self.teleop_active = False
-            self.target_z = self.current_z
+            self.target_z = self.current_z  # Latches current Z when user lets go
             self.get_logger().info(f"Teleop timeout. Auto-latched holding altitude: Z = {self.target_z:.3f} m")
 
-        # Initial launch case: If idle at spawn, latch current Z immediately
+        # Initial launch case: Latch exact Z at spawn once physics stabilizes
         if self.target_z is None and not self.teleop_active:
+            # Re-latch current Z (now guaranteed safe since spawn explosion is fixed)
             self.target_z = self.current_z
             self.get_logger().info(f"Initial spawn altitude latched: Z = {self.target_z:.3f} m")
 
@@ -83,23 +84,26 @@ class HoldCurrentZPID(Node):
             self.cmd_pub.publish(self.manual_cmd)
             self.integral_error = 0.0
         else:
-            # PID Closed-Loop Hold around latched target_z
             # Position error in World Z-frame
             error = self.target_z - self.current_z
 
+            # Deadband small millimeter chatter
+            if abs(error) < 0.01:
+                error = 0.0
+
             P = self.Kp * error
             self.integral_error += error * self.dt
-            self.integral_error = np.clip(self.integral_error, -0.1, 0.1)
+            self.integral_error = np.clip(self.integral_error, -0.05, 0.05)
             I = self.Ki * self.integral_error
             D = -self.Kd * self.current_vz
 
-            # Output range clamped [-0.3, 0.3]
-            u_heave = float(np.clip(P + I + D, -0.3, 0.3))
+            # Tight output range clamp [-0.1, 0.1]
+            u_heave = float(np.clip(P + I + D, -0.1, 0.1))
 
-            
             cmd = Twist()
             cmd.linear.z = u_heave
             self.cmd_pub.publish(cmd)
+            
 
 def main(args=None):
     rclpy.init(args=args)

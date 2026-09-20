@@ -9,6 +9,8 @@ from visualization_msgs.msg import Marker, MarkerArray
 from nav_msgs.msg import Path
 from tf2_ros import TransformBroadcaster, StaticTransformBroadcaster
 import numpy as np
+import csv
+import os
 
 class PiezoJetAUVController:
     """Hydrodynamic force mapper and dynamic solver."""
@@ -101,6 +103,10 @@ class PiezoSimulationROSNode(Node):
         self.pub_signals = self.create_publisher(Float64MultiArray, '/piezo_signals', qos_profile)
         self.pub_markers = self.create_publisher(MarkerArray, '/piezo_pulse_markers', 10)
         self.pub_path = self.create_publisher(Path, '/executed_path', 10)
+        
+        # Added missing publisher initialization
+        self.pub_joint_states = self.create_publisher(JointState, '/joint_states', 10)
+
         # Parameter to control whether this standalone node should broadcast TF
         self.declare_parameter('publish_tf', False)
         self.publish_tf = bool(self.get_parameter('publish_tf').value)
@@ -114,10 +120,21 @@ class PiezoSimulationROSNode(Node):
 
         if self.publish_tf:
             self.publish_static_transforms()
+            
         self.timer = self.create_timer(self.dt, self.timer_callback)
 
+        # CSV Logging Setup
+        self.csv_filename = os.path.expanduser('~/auv_ws/piezo_signals_log.csv')
+        self.csv_file = open(self.csv_filename, mode='w', newline='')
+        self.csv_writer = csv.writer(self.csv_file)
+        self.csv_writer.writerow([
+            'time', 'v_hover_f', 'v_hover_r', 
+            'v_left_f', 'v_left_r', 'v_right_f', 'v_right_r',
+            'u_cmd', 'r_cmd', 'w_cmd'
+        ])
+        self.get_logger().info(f'Piezo Waveform Signal Logging Active: {self.csv_filename}')
+
     def publish_static_transforms(self):
-        # Anchor map -> odom
         static_tf = TransformStamped()
         static_tf.header.stamp = self.get_clock().now().to_msg()
         static_tf.header.frame_id = 'map'
@@ -162,7 +179,6 @@ class PiezoSimulationROSNode(Node):
         self.pub_joint_states.publish(js)
 
         if self.publish_tf:
-            # Dynamic TF: odom -> base_footprint (standalone mode only)
             cy = np.cos(self.pose_2d[2] * 0.5)
             sy = np.sin(self.pose_2d[2] * 0.5)
 
@@ -179,17 +195,24 @@ class PiezoSimulationROSNode(Node):
             t_tf.transform.rotation.w = float(cy)
             self.tf_broadcaster.sendTransform(t_tf)
 
-        # Publish 6-Channel Waveforms
+        # Generate and publish 6-Channel Waveforms
         v_inst = [self.generate_waveform(t, v_val) for v_val in V_cmd]
         sig_msg = Float64MultiArray()
         sig_msg.data = [t] + [float(val) for val in v_inst]
         self.pub_signals.publish(sig_msg)
 
-        # Always update Path Header Stamp
+        # Write 6-channel signal array to CSV file
+        self.csv_writer.writerow([t] + v_inst + [self.u_cmd, self.r_cmd, self.w_cmd])
+        self.csv_file.flush()
+
+        # Update Path Header Stamp
         self.path_msg.header.stamp = now
 
         # Append Path & Markers when moving or command is active
         if abs(u) > 0.001 or abs(r) > 0.001 or max(V_cmd) > 1.0:
+            cy = np.cos(self.pose_2d[2] * 0.5)
+            sy = np.sin(self.pose_2d[2] * 0.5)
+            
             pose = PoseStamped()
             pose.header.frame_id = "odom"
             pose.header.stamp = now
@@ -227,6 +250,11 @@ class PiezoSimulationROSNode(Node):
         markers.markers.append(marker)
         self.pub_markers.publish(markers)
 
+    def destroy_node(self):
+        if hasattr(self, 'csv_file') and not self.csv_file.closed:
+            self.csv_file.close()
+        super().destroy_node()
+
 def main(args=None):
     rclpy.init(args=args)
     node = PiezoSimulationROSNode()
@@ -234,8 +262,10 @@ def main(args=None):
         rclpy.spin(node)
     except KeyboardInterrupt:
         pass
-    node.destroy_node()
-    rclpy.shutdown()
+    finally:
+        node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
