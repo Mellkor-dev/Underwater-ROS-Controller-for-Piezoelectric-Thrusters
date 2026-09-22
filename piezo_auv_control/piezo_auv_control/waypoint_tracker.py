@@ -42,17 +42,20 @@ class WaypointTracker(Node):
         self.odom_received = True
 
     def control_loop(self):
-        if not self.odom_received or self.current_idx >= len(self.waypoints):
-            if self.current_idx >= len(self.waypoints):
-                self.get_logger().info('Mission Complete. Holding position.')
-                self.cmd_pub.publish(Twist())  # Stop at end of route
+        if not self.odom_received:
+            return
+
+        # Check if mission is complete
+        if self.current_idx >= len(self.waypoints):
+            self.get_logger().info('Mission Complete. Holding position.')
+            self.cmd_pub.publish(Twist())  # Send all zeros
             return
 
         target = self.waypoints[self.current_idx]
         error_vec = target - self.current_pose
         dist_2d = np.linalg.norm(error_vec[:2])
 
-        # Waypoint Advancement Check: Distance sphere or passed-by check
+        # Waypoint Advancement Check
         if dist_2d < self.goal_tolerance or (self.current_pose[0] > target[0] and abs(error_vec[1]) < 0.3):
             self.get_logger().info(f'---> REACHED WAYPOINT {self.current_idx + 1}: {target}')
             self.current_idx += 1
@@ -62,10 +65,16 @@ class WaypointTracker(Node):
         yaw_error = np.arctan2(np.sin(target_yaw - self.current_yaw), np.cos(target_yaw - self.current_yaw))
 
         cmd = Twist()
-        # Absolute speed caps prevent runaway linear acceleration
-        cmd.linear.x = float(np.clip(0.12 * dist_2d, 0.03, 0.12))       # Fixed speed ceiling 0.12 m/s
-        cmd.angular.z = float(np.clip(-0.3 * yaw_error, -0.15, 0.15))    # Active heading correction
-        cmd.linear.z = float(np.clip(0.3 * error_vec[2], -0.05, 0.05))   # Depth lock
+        
+        # CRITICAL FIX: Strictly clip surge to 0.12 so turning headroom exists
+        cmd.linear.x = float(np.clip(0.12 * dist_2d, 0.03, 0.12))
+        
+        # Heading deadband: prevent tiny noise from chattering the jets
+        if abs(yaw_error) < 0.05:
+            cmd.angular.z = 0.0
+        else:
+            # Positive angular.z turns CCW (Left)
+            cmd.angular.z = float(np.clip(0.3 * yaw_error, -0.15, 0.15))
 
         self.cmd_pub.publish(cmd)
 

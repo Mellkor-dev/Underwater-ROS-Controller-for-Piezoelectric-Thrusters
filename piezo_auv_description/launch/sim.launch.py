@@ -71,7 +71,7 @@ def generate_launch_description():
         arguments=[
             '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
             '/imu@sensor_msgs/msg/Imu[gz.msgs.IMU',
-            '/world/underwater_world/wrench/persistent@ros_gz_interfaces/msg/EntityWrench]gz.msgs.EntityWrench',
+            '/world/underwater_world/wrench@ros_gz_interfaces/msg/EntityWrench]gz.msgs.EntityWrench',
             '/world/underwater_world/wrench/clear@ros_gz_interfaces/msg/Entity]gz.msgs.Entity',
             '/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry',
         ],
