@@ -56,7 +56,7 @@ class PJAControllerOriented(Node):
             'right_jet_r':  {'x':  0.00870, 'y': -0.03848, 'z':  0.00350, 'dir': [-1, 0, 0]},
         }
 
-        self.max_thrust = 0.10  # N (Peak PJA force)
+        self.max_thrust = 0.45  # N (Peak PJA force)
         self.get_logger().info('PJA Allocation Controller Active (Persistent Wrench Mode).')
 
     def publish_map_to_odom_static(self):
@@ -116,7 +116,7 @@ class PJAControllerOriented(Node):
         # ACTIVE RATE DAMPING: Subtract Kd * omega_z to prevent runaway rotational integration
         Kd_yaw = 0.08
         damped_yaw = u_yaw - Kd_yaw * getattr(self, 'current_gz', 0.0)
-        yaw_gain = 0.3 * damped_yaw
+        yaw_gain = 0.35 * damped_yaw
 
         surge_pitch_comp = 0.15 * abs(u_surge)
 
@@ -126,8 +126,8 @@ class PJAControllerOriented(Node):
             'hover_rear':  float(np.clip(u_heave - u_pitch - surge_pitch_comp, 0.0, 1.0)),
             'left_jet_f':  float(np.clip(u_surge - yaw_gain, 0.0, 1.0)),
             'right_jet_f': float(np.clip(u_surge + yaw_gain, 0.0, 1.0)),
-            'left_jet_r':  float(np.clip(-u_surge + yaw_gain, 0.0, 1.0)),  # Fixed sign
-            'right_jet_r': float(np.clip(-u_surge - yaw_gain, 0.0, 1.0)),  # Fixed sign
+            'left_jet_r':  float(np.clip(-u_surge + yaw_gain, 0.0, 1.0)),
+            'right_jet_r': float(np.clip(-u_surge - yaw_gain, 0.0, 1.0)),
         }
         # Check if any thruster is active
         if not any(d >= 1e-4 for d in demands.values()):

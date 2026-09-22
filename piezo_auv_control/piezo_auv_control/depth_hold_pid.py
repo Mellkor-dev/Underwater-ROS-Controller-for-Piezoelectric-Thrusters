@@ -18,9 +18,9 @@ class DynamicDepthHoldPID(Node):
         self.guidance_sub = self.create_subscription(Twist, '/teleop/cmd_vel', self.guidance_callback, 10)
 
         # PID Gains for Heave (Z)
-        self.Kp = 3.0
+        self.Kp = 3.5
         self.Ki = 0.15
-        self.Kd = 0.5
+        self.Kd = 0.8
 
         self.target_z = 0.5  # Target operational depth (0.5m)
         self.current_z = 0.0
@@ -56,7 +56,7 @@ class DynamicDepthHoldPID(Node):
             self.guidance_yaw = 0.0
         # Closed-Loop Depth Control
         error = self.target_z - self.current_z
-        u_ff = 0.35  # Baseline buoyancy compensation
+        u_ff = 0.3  # Baseline buoyancy compensation
 
         P = self.Kp * error
         self.integral_error = np.clip(self.integral_error + error * self.dt, -0.4, 0.4)

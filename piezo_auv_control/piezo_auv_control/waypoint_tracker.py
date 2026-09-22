@@ -67,14 +67,14 @@ class WaypointTracker(Node):
         cmd = Twist()
         
         # CRITICAL FIX: Strictly clip surge to 0.12 so turning headroom exists
-        cmd.linear.x = float(np.clip(0.12 * dist_2d, 0.03, 0.12))
+        cmd.linear.x = float(np.clip(0.8 * dist_2d, 0.15,1.0))  # Surge proportional to distance, min 0.15 m/s
         
         # Heading deadband: prevent tiny noise from chattering the jets
         if abs(yaw_error) < 0.05:
             cmd.angular.z = 0.0
         else:
             # Positive angular.z turns CCW (Left)
-            cmd.angular.z = float(np.clip(0.3 * yaw_error, -0.15, 0.15))
+            cmd.angular.z = float(np.clip(0.3 * yaw_error, -0.5,0.5))
 
         self.cmd_pub.publish(cmd)
 
