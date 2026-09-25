@@ -106,6 +106,19 @@ def generate_launch_description():
         ]
     )
 
+    delayed_piezo_signal_generator = TimerAction(
+        period=4.0,
+        actions=[
+            Node(
+                package='piezo_auv_control',
+                executable='piezo_sim_node',
+                name='piezo_signal_generator',
+                output='screen',
+                parameters=[{'use_sim_time': True}]
+            )
+        ]
+    )
+
     rviz_config_file = os.path.join(pkg_piezo_auv_desc, 'config', 'auv.rviz')
     rviz_node = Node(
         package='rviz2',
@@ -125,5 +138,6 @@ def generate_launch_description():
         bridge_node,
         delayed_pja_controller,
         delayed_depth_hold,
+        delayed_piezo_signal_generator,
         rviz_node
     ])

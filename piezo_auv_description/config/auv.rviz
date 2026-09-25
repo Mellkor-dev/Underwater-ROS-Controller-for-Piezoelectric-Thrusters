@@ -11,6 +11,7 @@ Panels:
         - /TF1
         - /Odometry1
         - /Odometry1/Covariance1
+        - /MarkerArray1
       Splitter Ratio: 0.5
     Tree Height: 895
   - Class: rviz_common/Selection
@@ -240,13 +241,13 @@ Visualization Manager:
       Enabled: true
       Name: MarkerArray
       Namespaces:
-        {}
+        piezo_pulse_trail: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: visualization_marker_array
+        Value: /piezo_pulse_markers
       Value: true
   Enabled: true
   Global Options:
@@ -269,7 +270,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 0.800000011920929
+      Distance: 0.3122977018356323
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1

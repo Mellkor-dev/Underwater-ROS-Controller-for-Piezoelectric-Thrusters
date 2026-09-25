@@ -50,7 +50,7 @@
         xyz="0 0 0.012"
         rpy="0 0 0" />
         <geometry>
-          <box size="0.10964625 0.11001523 0.00408" />
+          <box size="0.10964625 0.11001523 0.0040815" />
         </geometry>
     </collision>
   </link>
@@ -427,18 +427,22 @@
         <kDotP>0.0</kDotP>
         <mDotQ>0.0</mDotQ>
         <nDotR>0.0</nDotR>
-        <xU>-0.05</xU>
-        <yV>-0.05</yV>
-        <zW>0.00</zW>
-        <kP>-0.00005</kP>
-        <mQ>-0.00005</mQ>
-        <nR>-0.00005</nR>
-        <xUabsU>-4.24</xUabsU>
-        <yVabsV>-4.22</yVabsV>
-        <zWabsW>-6.63</zWabsW>
-        <kPabsP>-0.00005</kPabsP>
-        <mQabsQ>-0.00005</mQabsQ>
-        <nRabsR>-0.00005</nRabsR>
+        
+        <!-- Realistic Linear Drag (Viscous Skin Friction) -->
+        <xU>-0.15</xU>
+        <yV>-0.15</yV>
+        <zW>-0.20</zW>
+        <kP>-0.001</kP>
+        <mQ>-0.001</mQ>
+        <nR>-0.002</nR>
+        
+        <!-- Realistic Quadratic Form Drag (Re ~ 5,270) -->
+        <xUabsU>-2.95</xUabsU>
+        <yVabsV>-2.95</yVabsV>
+        <zWabsW>-5.28</zWabsW>
+        <kPabsP>-0.0045</kPabsP>
+        <mQabsQ>-0.0045</mQabsQ>
+        <nRabsR>-0.0041</nRabsR>
       </plugin>
     </gazebo>
 
